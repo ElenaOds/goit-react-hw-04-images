@@ -1,4 +1,4 @@
-import { Component} from 'react';
+import { useState, useEffect} from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -9,49 +9,32 @@ import { ImageGallery } from '../ImageGallery/ImageGallery';
 import { Button } from '../Button/Button';
 import {Modal} from '../Modal/Modal';
 
-export class App extends Component {
-  state = {
-    search: '',
-    images: [],
-    page: 1,
-    currentImage: null,
-    status: "idle",
+export function App () {
+const [search, setSearch] = useState('');
+const [images, setImages] = useState([]);
+const [page, setPage] = useState(1);
+const [currentImage, setCurrentImage] = useState(null);
+const [status, setStatus] = useState('idle');
+
+useEffect(() => {
+  if (!search) {
+    return;
   };
 
-  componentDidUpdate(_, prevState) {
-    const { page, search } = this.state;
-    if (prevState.page !== page || prevState.search !== search) {
-      if (search !== '') {
-        this.fetchData({ page, search });
-      }
-    }
-  }
-  handleFormSubmit = search => {
-    if (search === '') {
-      toast.error('Please enter key word', {
-        position: toast.POSITION.TOP_CENTER
-      });
-    }
-    this.setState({
-      images: [],
-      search,
-      page: 1,
-    });
-  };
-
-  fetchData = async ({ page = this.state.page, search = '' }) => {
-    this.setState({ status: "pending" });
-
+  const fetchData = async ({ page, search = '' }) => {
+    setStatus('pending');
+   
     try {
-      const data = await getImages({ page, search });
-      this.handleResolve(data);
+      const data = await getImages({page, search});
+      handleResolve(data);
+
     } catch (error) {
-      this.setState({ status: "rejected" });
+      setStatus('rejected');
       console.log(error);
-    }
+    } 
   };
 
-  handleResolve = ({ hits, total, totalHits }) => {
+  const handleResolve = ({ hits, total, totalHits }) => {
     const sortedImages = hits.map(
       ({ id, webformatURL, tags, largeImageURL }) => ({
         id,
@@ -66,66 +49,67 @@ export class App extends Component {
         'Sorry, there are no images matching your search query. Please try again.', {
           position: toast.POSITION.TOP_RIGHT
         });
-      this.setState({ status: "idle" });
+        setStatus('idle');
       return;
     }
 
-    if (totalHits < this.state.page * 12) {
-      this.setState(({ images }) => ({
-        images: [...images, ...sortedImages],
-        status: "idle",
-      }));
-      toast.info(
+    if (totalHits < page * 12) {
+      setImages(prevImages => [...prevImages, ...sortedImages]);
+        setStatus('idle');
+            toast.info(
         "We're sorry, but you've reached the end of search results", {
           position: toast.POSITION.TOP_RIGHT
         });
       return;
     }
 
-    this.setState(({ images }) => ({
-      images: [...images, ...sortedImages],
-      status: "resolved",
-    }));
-    if (this.state.page === 1) {
+    setImages(prevImages => [...prevImages, ...sortedImages]);
+      setStatus('resolved');
+
+        if (setPage === 1) {
       toast.success(`We've found images as per your request`, {
         position: toast.POSITION.TOP_RIGHT
       });
     }
   };
-  handleLoadMore = () => {
-    this.setState(({ page }) => ({
-      page: page + 1,
-    }));
+
+  fetchData({ page, search });
+
+}, [page, search]);
+
+
+const handleFormSubmit = search => {
+  setSearch(search);
+  setImages([]);
+  setPage(1);
+};
+    const handleLoadMore = () => {
+    setPage (prevPage => prevPage +1)
    };
   
-  openModal = image => {
-    this.setState({ currentImage: image });
-  };
-  
-  closeModal = () => {
-    this.setState({ currentImage: null });
-  };
-
-  render() {
-    const { images, status, currentImage } = this.state;
     return (
       <div>
-        <Searchbar onSubmit={this.handleFormSubmit} />
+        <Searchbar onSubmit={handleFormSubmit} />
         {images.length > 0 && (
-          <ImageGallery images={images} onClick={this.openModal} />
+          <ImageGallery 
+          images={images} 
+          onClick={setCurrentImage} 
+          />
         )}
         {images.length > 0 && status === "resolved" && (
-          <Button onClick={this.handleLoadMore} />
+          <Button 
+          onClick={handleLoadMore} 
+          />
         )}
 
         {status === "pending"  && <Loader />}
         
         {currentImage && (
-          <Modal image={currentImage} onClose={this.closeModal} />
+          <Modal 
+          image={currentImage} onClose={setCurrentImage} 
+          />
         )}
         <ToastContainer autoClose={3000} theme="colored"/>
         </div>
     );
   }
-}
-

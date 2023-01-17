@@ -1,32 +1,29 @@
-import { Component} from 'react';
+import { useState} from 'react';
 import { Header, Form, FormButton, FormInput } from './Searchbar.styled';
 import { ReactComponent as ButtonIcon} from '../../icons/search.svg';
 import { toast } from 'react-toastify';
 
-export class Searchbar extends Component {
-    state = {
-        search: '',
+export function Searchbar({ onSubmit })  {
+    const [search, setSearch] = useState('')
+    
+
+    const handleNameChange = event => {
+        setSearch(event.currentTarget.value.toLowerCase());
     };
 
-    handleNameChange = event => {
-        this.setState({ search: event.currentTarget.value.toLowerCase() });
-    };
-
-    handleSubmit = event => {
+    const handleSubmit = event => {
         event.preventDefault();
 
-        if(this.state.search.trim() === '') {
+        if(search.trim() === '') {
             return toast.error("You cannot search by empty field. Try again");
         }
 
-        this.props.onSubmit(this.state.search);
-        this.setState({ search: '' });
+        onSubmit(search);
+        setSearch('');
     };
-
-    render() {
         return (
             <Header>
-                <Form onSubmit={this.handleSubmit}>
+                <Form onSubmit={handleSubmit}>
                     <FormButton type="submit">
                         <ButtonIcon aria-label="Search"/>
                     </FormButton>
@@ -37,11 +34,10 @@ export class Searchbar extends Component {
                         autocomplete="off"
                         autoFocus
                         placeholder="Search images and photos"
-                        value={this.state.search}
-                        onChange={this.handleNameChange}
+                        value={search}
+                        onChange={handleNameChange}
                     />
                 </Form>
             </Header>
         )
-    }
 }
